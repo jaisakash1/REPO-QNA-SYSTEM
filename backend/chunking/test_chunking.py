@@ -1,7 +1,7 @@
 from backend.ingestion.pipeline import ingest_repo
 from backend.chunking.save_chunks import save_chunks
 
-url = "https://github.com/jaisakash1/REPO-QNA-SYSTEM"
+url = "https://github.com/jaisakash1/workshop"
 
 data = ingest_repo(url)
 chunks = data["chunks"]

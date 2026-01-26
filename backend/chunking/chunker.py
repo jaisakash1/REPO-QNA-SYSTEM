@@ -29,6 +29,13 @@ def chunk_content(content, file_path, repo_name, chunk_size=800, overlap=100):
         })
 
         chunk_index += 1
-        start = end - overlap  # move back for overlap
+        
+        # Calculate next start position with overlap
+        # Ensure we always advance by at least 1 line to prevent infinite loop
+        next_start = end - overlap
+        if next_start <= start:
+            # If overlap would cause no progress, just move to end
+            next_start = end
+        start = next_start
 
     return chunks

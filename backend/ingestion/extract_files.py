@@ -1,6 +1,6 @@
 import os
 
-IGNORED_DIRS = {'.git', 'node_modules', 'dist', 'build', '.next', '__pycache__', 'venv', '.cache'}
+IGNORED_DIRS = {'.git', 'node_modules', 'dist', 'build', '.next', '__pycache__', 'venv', '.cache','.vscode'}
 ALLOWED_EXT = {'.md', '.py', '.js', '.ts', '.go', '.java', '.cpp', '.c', '.html', '.css', '.json', '.yaml'}
 
 def extract_repo_files(repo_path):
