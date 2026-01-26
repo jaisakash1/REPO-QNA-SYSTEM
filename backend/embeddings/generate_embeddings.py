@@ -8,7 +8,7 @@ def generate_embeddings_langchain(chunks, repo_name, save_path="data/embeddings"
     # Initialize Gemini Embedding Model
     embeddings = GoogleGenerativeAIEmbeddings(
         model="text/embedding-004",   # official embedding model
-        google_api_key="AIzaSyB10n6xoM50fY4hYBYrUHHcVfUGchwfdT4"  # must be set
+        google_api_key=os.getenv("GEMINI_API_KEY")  # must be set
     )
 
     vectors = []
