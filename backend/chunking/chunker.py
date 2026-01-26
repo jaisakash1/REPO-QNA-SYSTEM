@@ -1,5 +1,6 @@
 import math
 
+
 def chunk_content(content, file_path, repo_name, chunk_size=800, overlap=100):
     """
     Splits content into overlapping chunks with line number tracking.

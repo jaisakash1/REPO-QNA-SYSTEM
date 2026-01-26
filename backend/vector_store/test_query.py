@@ -1,7 +1,7 @@
 from backend.vector_store.faiss_store import search_similar
 
 repo_name = "NutriFit"  # or whatever your repo is
-query = "exercise planner implementation"
+query = "authentication jwt login register"
 
 results = search_similar(repo_name, query)
 
