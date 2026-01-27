@@ -37,4 +37,4 @@ EXPOSE 8000
 
 # Start command
 # Note: We use the array format and reference the backend package structure
-CMD ["sh", "-c", "uvicorn backend.api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
