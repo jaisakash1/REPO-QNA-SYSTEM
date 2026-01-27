@@ -3,7 +3,7 @@ from backend.embeddings.generate_embeddings_local import generate_embeddings_loc
 from backend.ingestion.pipeline import ingest_repo
 
 # Ingest and chunk
-url = "https://github.com/jaisakash1/NutriFit"
+url = "https://github.com/raj-adi00/VideoStream"
 data = ingest_repo(url)
 chunks = data["chunks"]
 

@@ -33,7 +33,7 @@ def load_faiss_index(repo_name, load_path="vector_store"):
 
     return index, metadata
     
-def search_similar(repo_name, query_text, top_k=5, load_path="vector_store"):
+def search_similar(repo_name, query_text, top_k=20, load_path="vector_store"):
     from sentence_transformers import SentenceTransformer
     import numpy as np
 
