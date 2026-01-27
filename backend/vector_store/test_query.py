@@ -1,7 +1,7 @@
 from backend.vector_store.faiss_store import search_similar
 
-repo_name = "VideoStream"  # or whatever your repo is
-query = "comment and tweet implementation"
+repo_name = "NutriFit"  # or whatever your repo is
+query = "diet planning implementation"
 
 results = search_similar(repo_name, query)
 

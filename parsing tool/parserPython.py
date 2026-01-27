@@ -44,3 +44,8 @@ class A:
 
 chunker = PythonFunctionChunker()
 print(chunker.chunk(code))
+
+
+# from tree_sitter_languages import get_parser
+# p = get_parser("python")
+# print(p)
