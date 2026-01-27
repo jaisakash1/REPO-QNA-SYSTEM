@@ -7,7 +7,12 @@ def generate_embeddings_local(chunks, repo_name, save_path="data/embeddings"):
 
     # print("[+] Loading embedding model: BGE-small-en-")
     # model = SentenceTransformer("BAAI/bge-small-en-v1.5")
-    model = SentenceTransformer("BAAI/bge-base-en-v1.5")
+
+    # model = SentenceTransformer("BAAI/bge-base-en-v1.5")
+    model = SentenceTransformer('all-MiniLM-L6-v2')
+
+
+
 
     vectors = []
     metadata = []

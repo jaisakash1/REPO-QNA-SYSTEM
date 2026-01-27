@@ -67,7 +67,8 @@ def search_similar(repo_name, query_text, top_k=8, load_path="vector_store"):
     import numpy as np
 
     index, metadata = load_faiss_index(repo_name, load_path)
-    model = SentenceTransformer("BAAI/bge-base-en-v1.5")
+    # model = SentenceTransformer("BAAI/bge-base-en-v1.5")
+    model = SentenceTransformer('all-MiniLM-L6-v2')
     
     query_vec = model.encode(query_text).astype("float32").reshape(1, -1)
 
