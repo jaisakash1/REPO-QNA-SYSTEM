@@ -5,8 +5,9 @@ from sentence_transformers import SentenceTransformer
 def generate_embeddings_local(chunks, repo_name, save_path="data/embeddings"):
     os.makedirs(save_path, exist_ok=True)
 
-    print("[+] Loading embedding model: BGE-small-en-v1.5")
-    model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+    # print("[+] Loading embedding model: BGE-small-en-")
+    # model = SentenceTransformer("BAAI/bge-small-en-v1.5")
+    model = SentenceTransformer("BAAI/bge-base-en-v1.5")
 
     vectors = []
     metadata = []
