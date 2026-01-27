@@ -106,4 +106,3 @@ def search_similar(repo_name, query_text, top_k=8, load_path="vector_store"):
         offset += search_batch  # move deeper for next loop
 
     return valid_results
-

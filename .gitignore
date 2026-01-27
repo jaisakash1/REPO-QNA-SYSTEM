@@ -9,6 +9,9 @@ __pycache__/
 *.pyo
 *.pyd
 
+data/
+vector_store/
+
 # Packaging
 build/
 dist/
