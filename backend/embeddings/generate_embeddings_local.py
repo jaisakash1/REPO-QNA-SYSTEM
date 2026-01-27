@@ -76,29 +76,26 @@ def generate_embeddings_local(chunks, repo_name, save_path="data/embeddings"):
     metadata = []
 
     for i, chunk in enumerate(chunks):
-        # --- CHANGED: Use Gemini for Document Embedding ---
+        # 1. Skip empty content immediately to prevent API errors
+        if not chunk["content"] or not chunk["content"].strip():
+            continue
+
         vec = get_gemini_embedding(chunk["content"], task_type="retrieval_document")
         
+        # 2. If embedding failed (None), skip this chunk
         if vec is None:
-            continue # Skip failed chunks
+            continue
             
         vectors.append(vec)
-
-        metadata.append({
-            "chunk_id": chunk["chunk_id"],
-            "file_path": chunk["file_path"],
-            "start_line": chunk["start_line"],
-            "end_line": chunk["end_line"],
-            "content": chunk["content"]
-        })
+        metadata.append(chunk) # Store metadata matching the vector
         
-        # Optional: Print progress every 10 chunks
-        if i % 10 == 0:
-            print(f"Processed {i}/{len(chunks)} chunks")
-        
-        # Tiny sleep to be safe with free tier limits
+        # Rate limit safety
         time.sleep(0.05) 
-    # --------------------------------------------------
+
+    # 3. CRITICAL FIX: If no vectors were generated, stop here.
+    if not vectors:
+        print("[-] Error: No embeddings were generated. Check API Key or Input Data.")
+        return [], []
 
     # Save vectors + metadata
     with open(f"{save_path}/{repo_name}_vectors.pkl", "wb") as f:
@@ -106,10 +103,5 @@ def generate_embeddings_local(chunks, repo_name, save_path="data/embeddings"):
 
     with open(f"{save_path}/{repo_name}_metadata.pkl", "wb") as f:
         pickle.dump(metadata, f)
-
-    print("[+] Embeddings saved at:", save_path)
-    print("[+] Total vectors:", len(vectors))
-    # Note: Gemini embedding dimension is 768, unlike MiniLM's 384
-    print("[+] Sample vector dimension:", len(vectors[0]) if vectors else 0)
 
     return vectors, metadata
