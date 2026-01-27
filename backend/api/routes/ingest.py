@@ -8,6 +8,12 @@ import shutil
 import stat
 import os
 
+from backend.ingestion.pipeline import ingest_repo
+from backend.chunking.chunk_resolver import resolve_chunks
+from backend.chunking.save_chunks import save_chunks
+from backend.embeddings.generate_embeddings_local import generate_embeddings_local
+from backend.vector_store.faiss_store import create_faiss_index
+
 router = APIRouter()
 
 
@@ -92,11 +98,6 @@ async def ingest_repository(request: IngestRequest):
     
     # Not indexed, proceed with full processing
     try:
-        from backend.ingestion.pipeline import ingest_repo
-        from backend.chunking.chunk_resolver import resolve_chunks
-        from backend.chunking.save_chunks import save_chunks
-        from backend.embeddings.generate_embeddings_local import generate_embeddings_local
-        from backend.vector_store.faiss_store import create_faiss_index
         
         # Step 1: Ingest repo (clone + extract files)
         print(f"[*] Ingesting repository: {request.url}")

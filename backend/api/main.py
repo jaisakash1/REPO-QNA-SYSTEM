@@ -4,8 +4,8 @@ FastAPI Backend for Repo QnA System
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes.ingest import router as ingest_router
-from api.routes.query import router as query_router
+from backend.api.routes.ingest import router as ingest_router
+from backend.api.routes.query import router as query_router
 
 app = FastAPI(
     title="Repo QnA API",
@@ -16,7 +16,7 @@ app = FastAPI(
 # CORS middleware for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174", "http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

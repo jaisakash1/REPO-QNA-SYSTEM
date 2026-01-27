@@ -75,7 +75,7 @@ async def query_repository(request: QueryRequest):
     """
     try:
         from backend.vector_store.faiss_store import search_similar
-        from api.utils.code_fetcher import get_code_from_chunks
+        from backend.api.utils.code_fetcher import get_code_from_chunks
         
         # Search for similar chunks
         print(f"[*] Searching for: {request.query}")
