@@ -1,614 +1,268 @@
-# Architecture Documentation
+# 🔍 Repo QnA - Query GitHub Repositories with Natural Language 
+### 🌐 Live Demo: [https://repo-frontend-b70m.onrender.com/](https://repo-frontend-b70m.onrender.com/)
 
-## System Overview
+A full-stack **GenAI RAG (Retrieval Augmented Generation)** application that lets you **ask natural language questions** about any GitHub repository and get relevant code snippets as answers. Built using semantic embeddings and vector similarity search. Simply paste a GitHub URL, wait for it to be indexed, and start asking questions!
 
-The GitHub Repository Q&A System is a Retrieval-Augmented Generation (RAG) application that enables semantic search and natural language queries over GitHub repositories.
+---
 
-## High-Level Architecture
+## 🎯 What Does This Project Do?
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         Frontend (React)                         │
-│  ┌──────────────┐  ┌──────────────┐  ┌─────────────────────┐  │
-│  │   Repo Form  │  │  Query Form  │  │   Answer Display    │  │
-│  └──────────────┘  └──────────────┘  └─────────────────────┘  │
-└────────────┬────────────────┬────────────────────────┬──────────┘
-             │                │                        │
-             ▼                ▼                        ▼
-┌────────────────────────────────────────────────────────────────┐
-│                                   │
-│  ┌──────────────────────────┐  ┌──────────────────────────┐   │
-│  │  process-repository      │  │  query-repository        │   │
-│  │  • Clone repo           │  │  • Embed query           │   │
-│  │  • Extract files        │  │  • Vector search         │   │
-│  │  • Chunk code           │  │  • RAG generation        │   │
-│  │  • Generate embeddings  │  │  • Store results         │   │
-│  └──────────────────────────┘  └──────────────────────────┘   │
-└────────────┬────────────────────────────┬─────────────────────You are an expert full-stack and AI engineer specializing in building RAG systems, code analysis tools, and developer agents.
+**Repo QnA** allows users to:
 
-Your mission is to help me build a GitHub Repository Q&A System step-by-step.
+1. **Ingest any public GitHub repository** - The system clones, parses, and chunks the codebase
+2. **Generate semantic embeddings** - Using Google's Gemini API (`text-embedding-004`)
+3. **Search with natural language** - Query the codebase like: *"How does authentication work?"*
+4. **Get relevant code snippets** - Results include file paths, line numbers, and similarity scores
 
-The system goal: ---------------------------------------- User enters a GitHub repo URL → system clones repo → cleans folders → extracts text/code → chunks → embeds → stores vectors in FAISS or ChromaDB → user asks a question → semantic search retrieves relevant chunks → send to Gemini or OpenAI → structured answer returned. ---------------------------------------- ### PROJECT REQUIREMENTS
-Follow this implementation pipeline:
+---
 
-Repo Ingestion
-
-Accept GitHub URL
-Clone repo locally
-Exclude useless folders (node_modules, build, dist, .git, binary files)
-Extract only relevant file types: .md, .py, .js, .ts, .go, .java, .cpp, .html, .json, etc.
-Chunking
-
-Use RecursiveCharacterTextSplitter (or equivalent) with:
-chunk_size ~ 512–1024 tokens
-chunk_overlap ~ 50 tokens
-Store metadata: file_path, start_line, end_line, language, chunk_id
-Embedding
-
-Use Gemini embeddings
-For each chunk produce embedding vector
-Vector Storage
-
-Use FAISS 
-Store embeddings + metadata
-Ensure persistent storage when possible
-Query Processing
-
-User enters natural language question (e.g., "What authentication is implemented?")
-Embed the query
-Search vector DB for top-k similar chunks (k=5 or k=10)
-LLM Answer Generation
-
-Build a RAG prompt that contains:
-User question
-Retrieved chunks as context
-Send to Gemini to generate answer
-If context insufficient, say "Not enough repository context to answer"
-Post-processing
-
-Convert answer into structured developer-friendly output:
-Authentication type (if applicable)
-Frameworks used
-Dependencies
-Relevant files
-Explanation
-### REQUIRED OUTPUT FORMAT FROM YOU
-When responding, always produce:
-
-Explanation of what's happening
-Exact code for that step
-Dependencies to install
-Folder structure updates
-Next action instruction
-Example formatting:
-
-Step 2 — Chunking Implementation -----------------------------------
-Explanation: ...
-Folder Structure Update: ...
-Dependencies: ...
-Code:┘
-             │                            │
-             ▼                            ▼
-┌────────────────────────────────────────────────────────────────┐
-│                                   │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐        │
-│  │ repositories │  │ code_chunks  │  │   queries    │        │
-│  │              │  │ + embeddings │  │              │        │
-│  └──────────────┘  └──────────────┘  └──────────────┘        │
-└────────────────────────────────────────────────────────────────┘
-             │                            │
-             └────────────┬───────────────┘
-                          ▼
-                    ┌──────────┐
-                    │ GEMINI  │
-                    │ API      │
-                    └──────────┘
-```
-
-## Data Flow
-
-### Repository Processing Pipeline
+## 🏗️ Architecture Overview
 
 ```
-1. User Input
-   └─> GitHub URL submitted
-
-2. Database Insert
-   └─> Create repository record (status: pending)
-
-3. Background Processing (Edge Function)
-   ├─> Clone repository with git
-   ├─> Walk directory tree
-   ├─> Filter files (exclude node_modules, etc.)
-   ├─> For each file:
-   │   ├─> Read content
-   │   ├─> Detect language
-   │   ├─> Chunk text (800 chars, 100 overlap)
-   │   ├─> For each chunk:
-   │   │   ├─> Generate embedding (OpenAI)
-   │   │   ├─> Extract metadata
-   │   │   └─> Store in code_chunks table
-   │   └─> Next chunk
-   └─> Update repository (status: completed)
-
-4. UI Update
-   └─> Poll database for status changes
-   └─> Display completed repository
+┌─────────────────────────────────────────────────────────────────────┐
+│                           FRONTEND (React + Vite)                    │
+│  - Enter GitHub URL → Index Repository                               │
+│  - Ask natural language questions → View code snippets               │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                           BACKEND (FastAPI)                          │
+│                                                                      │
+│  ┌─────────────────┐    ┌──────────────────┐    ┌────────────────┐  │
+│  │   /api/ingest   │    │   /api/query     │    │  /api/repos    │  │
+│  │  Clone & Index  │    │ Semantic Search  │    │  List Indexed  │  │
+│  └─────────────────┘    └──────────────────┘    └────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+                   ┌────────────────┼────────────────┐
+                   ▼                ▼                ▼
+            ┌───────────┐   ┌────────────────┐   ┌───────────────┐
+            │  Chunking │   │   Embeddings   │   │  Vector Store │
+            │ (AST/FE)  │   │ (Gemini API)   │   │   (FAISS)     │
+            └───────────┘   └────────────────┘   └───────────────┘
 ```
 
-### Query Processing Pipeline
+---
+
+## 🔧 Tech Stack
+
+### Backend
+| Component | Technology |
+|-----------|------------|
+| Framework | **FastAPI** |
+| Embeddings | **Google Gemini API** (text-embedding-004) |
+| Vector Database | **FAISS** (Facebook AI Similarity Search) |
+| Code Parsing | **Tree-sitter** / AST-based chunking |
+| Repository Cloning | **Git** |
+
+### Frontend
+| Component | Technology |
+|-----------|------------|
+| Framework | **React 19** |
+| Build Tool | **Vite** |
+| Styling | Vanilla CSS (Dark theme with glassmorphism) |
+
+---
+
+## 📁 Project Structure
 
 ```
-1. User Question
-   └─> Natural language input
-
-2. Question Embedding
-   └─> Generate vector embedding (OpenAI)
-
-3. Vector Similarity Search
-   ├─> Search code_chunks table
-   ├─> Use HNSW index for fast search
-   ├─> Return top-K similar chunks (K=10)
-   └─> Include similarity scores
-
-4. Context Assembly
-   ├─> Format retrieved chunks
-   ├─> Include file paths and line numbers
-   └─> Build RAG prompt
-
-5. LLM Generation
-   ├─> Send to GPT-4-mini
-   ├─> System prompt defines structure
-   ├─> Generate structured JSON answer
-   └─> Parse and validate response
-
-6. Result Storage
-   ├─> Store query in database
-   ├─> Save retrieved chunks
-   ├─> Record processing time
-   └─> Return to frontend
-
-7. Display Answer
-   └─> Render structured output
-   └─> Show relevant files
-   └─> Display context chunks
+REPO_QNA/
+├── backend/
+│   ├── api/
+│   │   ├── main.py              # FastAPI app entry point
+│   │   ├── routes/
+│   │   │   ├── ingest.py        # POST /api/ingest - Clone & index repos
+│   │   │   └── query.py         # POST /api/query - Semantic search
+│   │   └── utils/
+│   │       └── code_fetcher.py  # Retrieve code from chunks
+│   │
+│   ├── ingestion/
+│   │   ├── pipeline.py          # Main ingestion orchestration
+│   │   ├── clone_repo.py        # Git clone logic
+│   │   └── extract_files.py     # Extract source files
+│   │
+│   ├── chunking/
+│   │   ├── chunk_resolver.py    # Resolve chunks (AST + fallback)
+│   │   ├── function_extractor.py # Extract functions/classes
+│   │   └── save_chunks.py       # Persist chunks to JSON
+│   │
+│   ├── embeddings/
+│   │   └── generate_embeddings_local.py  # Gemini API embeddings
+│   │
+│   ├── vector_store/
+│   │   └── faiss_store.py       # FAISS index creation & search
+│   │
+│   ├── requirements.txt         # Python dependencies
+│   └── Dockerfile               # Backend containerization
+│
+├── frontend/
+│   ├── src/
+│   │   ├── App.jsx              # Main React component
+│   │   └── App.css              # Styling
+│   ├── package.json             # Node dependencies
+│   └── vite.config.js           # Vite configuration
+│
+├── data/
+│   ├── repos/                   # Cloned repositories (temp)
+│   ├── chunks/                  # Saved code chunks (JSON)
+│   └── embeddings/              # Generated embeddings
+│
+├── vector_store/                # FAISS indices per repo
+│   └── {repo_name}_faiss.index
+│
+└── .env                         # Environment variables
 ```
 
-## Component Breakdown
+---
 
-### Frontend Components
+## 🚀 How It Works
 
-#### RepoIngestionForm.tsx
-- **Purpose:** Accept GitHub repository URLs
-- **State:** URL input, loading, error messages
-- **Actions:**
-  - Validate URL format
-  - Extract repo name (owner/repo)
-  - Insert into database
-  - Trigger background processing
-- **Dependencies:** Supabase client
+### **Step 1: Ingestion Pipeline** (`POST /api/ingest`)
 
-#### RepositoryList.tsx
-- **Purpose:** Display all repositories with status
-- **State:** Repository list, loading, selected repo
-- **Actions:**
-  - Fetch repositories from database
-  - Auto-refresh on status changes
-  - Handle repository selection
-- **Features:**
-  - Status icons (pending, processing, completed, failed)
-  - File and chunk counts
-  - Error message display
+When a GitHub URL is submitted:
 
-#### QueryInterface.tsx
-- **Purpose:** Accept user questions
-- **State:** Question input, loading, error
-- **Actions:**
-  - Submit question to Edge Function
-  - Handle response
-  - Display errors
-- **Features:**
-  - Example questions
-  - Real-time feedback
-  - Disabled when no repo selected
+1. **Clone Repository** - Uses `git clone` to download the repo
+2. **Extract Files** - Filters for supported code files
+3. **Chunk Code** - Uses AST parsing to extract functions/classes (with fallback to line-based chunking)
+4. **Generate Embeddings** - Sends chunks to Gemini API for semantic embeddings
+5. **Create FAISS Index** - Stores vectors for fast similarity search
+6. **Save Chunks** - Persists code chunks to JSON for retrieval
+7. **Cleanup** - Deletes cloned repo (only chunks & index are kept)
 
-#### AnswerDisplay.tsx
-- **Purpose:** Render structured answers
-- **State:** Query result object
-- **Features:**
-  - Parse JSON answer
-  - Display all fields conditionally
-  - Show relevant files
-  - Display context chunks with similarity scores
-  - Processing time indicator
+### **Step 2: Query Pipeline** (`POST /api/query`)
 
-### Backend Functions
+When a natural language question is asked:
 
-#### process-repository/index.ts
+1. **Generate Query Embedding** - Convert question to vector using Gemini
+2. **FAISS Search** - Find top-k most similar code chunks
+3. **Retrieve Code** - Fetch actual source code from saved chunks
+4. **Return Results** - Include file path, line numbers, similarity score, and code
 
-**Input:**
-```typescript
-{
-  repository_id: string
-}
+---
+
+## ⚙️ Setup & Installation
+
+### Prerequisites
+
+- **Python 3.10+**
+- **Node.js 18+**
+- **Git**
+- **Google Gemini API Key** (for embeddings)
+
+### Backend Setup
+
+```bash
+cd backend
+
+# Create virtual environment
+python -m venv venv
+venv\Scripts\activate  # Windows
+# source venv/bin/activate  # Linux/Mac
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set environment variable
+# Create .env file with:
+GEMINI_API_KEY=your_api_key_here
+
+# Run the server
+uvicorn backend.api.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-**Process:**
-1. Fetch repository from database
-2. Update status to 'processing'
-3. Clone repository using git command
-4. Walk directory tree recursively
-5. Filter by file extensions and folders
-6. For each file:
-   - Read text content
-   - Split into chunks
-   - Generate embeddings
-   - Store chunks with metadata
-7. Update repository status and counts
-8. Clean up temporary files
+### Frontend Setup
 
-**Output:**
-```typescript
-{
-  success: boolean,
-  repository_id: string,
-  total_files: number,
-  total_chunks: number
-}
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create .env file with:
+VITE_API_URL=http://localhost:8000/api
+
+# Run development server
+npm run dev
 ```
 
-**Error Handling:**
-- Catches all errors
-- Updates repository status to 'failed'
-- Stores error message
-- Cleans up temp directory
+---
 
-#### query-repository/index.ts
+## 🌐 API Endpoints
 
-**Input:**
-```typescript
-{
-  repository_id: string,
-  question: string
-}
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | API info & available endpoints |
+| `GET` | `/health` | Health check |
+| `POST` | `/api/ingest` | Ingest a GitHub repository |
+| `POST` | `/api/query` | Query repository with natural language |
+| `GET` | `/api/repos` | List all indexed repositories |
+
+### Example: Ingest a Repository
+
+```bash
+curl -X POST http://localhost:8000/api/ingest \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://github.com/username/repo"}'
 ```
 
-**Process:**
-1. Authenticate user from JWT token
-2. Verify repository is completed
-3. Generate question embedding
-4. Call search_similar_chunks function
-5. Format chunks as context
-6. Build RAG prompt
-7. Call GPT-4-mini API
-8. Parse JSON response
-9. Store query and results
-10. Return answer
+### Example: Query a Repository
 
-**Output:**
-```typescript
-{
-  query_id: string,
-  answer: string, // JSON string
-  retrieved_chunks: Chunk[],
-  processing_time_ms: number
-}
+```bash
+curl -X POST http://localhost:8000/api/query \
+  -H "Content-Type: application/json" \
+  -d '{"repo_name": "repo", "query": "How does user authentication work?", "top_k": 5}'
 ```
 
-**Error Handling:**
-- Validates repository status
-- Handles empty search results
-- Catches OpenAI API errors
-- Returns structured error messages
+---
 
-## Database Schema
+## 🚢 Deployment
 
-### repositories
+### Backend (Render)
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| github_url | text | Full GitHub URL |
-| repo_name | text | owner/repo format |
-| status | text | pending, processing, completed, failed |
-| total_files | integer | Number of files processed |
-| total_chunks | integer | Number of chunks created |
-| error_message | text | Error details if failed |
-| created_at | timestamptz | When added |
-| processed_at | timestamptz | When completed |
-| user_id | uuid | User who added repo |
+The project includes a `render.yaml` and `Dockerfile` for easy deployment to [Render](https://render.com).
 
-**Indexes:**
-- Primary key on id
-- Unique on github_url
-- Index on status
-- Index on user_id
-- Index on created_at (DESC)
+### Frontend (Vercel)
 
-### code_chunks
+Deploy the frontend to [Vercel](https://vercel.com) with:
+- Set `VITE_API_URL` to your deployed backend URL
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| repository_id | uuid | Foreign key to repositories |
-| file_path | text | Relative path in repo |
-| content | text | Chunk text content |
-| language | text | Programming language |
-| start_line | integer | Starting line number |
-| end_line | integer | Ending line number |
-| chunk_index | integer | Chunk number in file |
-| chunk_size | integer | Character count |
-| embedding | vector(1536) | OpenAI embedding vector |
-| metadata | jsonb | Additional metadata |
-| created_at | timestamptz | When created |
+---
 
-**Indexes:**
-- Primary key on id
-- Foreign key on repository_id
-- Index on language
-- Index on file_path
-- **HNSW index on embedding** (most important!)
+## 🔑 Environment Variables
 
-### queries
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| repository_id | uuid | Foreign key to repositories |
-| user_id | uuid | User who asked |
-| question | text | User's question |
-| answer | text | JSON structured answer |
-| retrieved_chunks | jsonb | Array of chunk objects |
-| model_used | text | LLM model name |
-| processing_time_ms | integer | Query duration |
-| created_at | timestamptz | When asked |
-
-**Indexes:**
-- Primary key on id
-- Foreign key on repository_id
-- Index on user_id
-- Index on created_at (DESC)
-
-## Vector Search Details
-
-### HNSW Index Configuration
-
-```sql
-CREATE INDEX idx_code_chunks_embedding ON code_chunks
-USING hnsw (embedding vector_cosine_ops)
-WITH (m = 16, ef_construction = 64);
+### Backend (`.env`)
+```
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-**Parameters:**
-- `m = 16`: Number of bi-directional links per node
-  - Higher = better recall, more memory
-  - 16 is a good balance for most use cases
-
-- `ef_construction = 64`: Size of dynamic candidate list during construction
-  - Higher = better index quality, slower build
-  - 64 provides good quality without excessive build time
-
-**Distance Metric:**
-- Using cosine distance (`vector_cosine_ops`)
-- Formula: `1 - (A · B) / (||A|| × ||B||)`
-- Range: 0 (identical) to 2 (opposite)
-
-### Search Function
-
-```sql
-CREATE FUNCTION search_similar_chunks(
-  query_embedding vector(1536),
-  repo_id uuid,
-  match_threshold float DEFAULT 0.5,
-  match_count int DEFAULT 10
-)
+### Frontend (`.env`)
+```
+VITE_API_URL=http://localhost:8000/api
 ```
 
-**Parameters:**
-- `query_embedding`: The question's vector representation
-- `repo_id`: Limit search to specific repository
-- `match_threshold`: Minimum similarity (0.5 = 50% similar)
-- `match_count`: Number of results to return
+---
 
-**Performance:**
-- Sub-linear time complexity: O(log n)
-- Approximate nearest neighbor search
-- Trade-off: Speed vs. accuracy (tunable)
+## ✨ Features
 
-## Security
+- ✅ **Natural language search** - Ask questions in plain English
+- ✅ **AST-based code chunking** - Intelligent function/class extraction
+- ✅ **Semantic similarity** - Powered by Gemini embeddings
+- ✅ **Fast vector search** - Using FAISS for efficient lookup
+- ✅ **Multi-language support** - Python, JavaScript, TypeScript, Java, C++, and more
+- ✅ **Automatic cleanup** - Cloned repos are deleted after indexing
+- ✅ **Skip re-indexing** - Already indexed repos are detected automatically
+- ✅ **Dark mode UI** - Modern, responsive interface with animations
 
-### Row Level Security (RLS)
+---
 
-All tables have RLS enabled with policies:
+## 📝 License
 
-**repositories:**
-- Anyone can SELECT (read all repos)
-- Users can INSERT their own repos
-- Users can UPDATE only their repos
+This project is for educational and personal use.
 
-**code_chunks:**
-- Anyone can SELECT (needed for search)
-- Only repo owner can INSERT chunks
+---
 
-**queries:**
-- Users can only SELECT their own queries
-- Users can only INSERT their own queries
+## 🤝 Contributing
 
-### Authentication
-
-Currently using Supabase Auth:
-- JWT tokens in Authorization header
-- User ID extracted from token
-- Validated on each request
-
-## API Integration
-
-### OpenAI API
-
-**Embeddings:**
-- Model: `text-embedding-3-small`
-- Dimensions: 1536
-- Cost: ~$0.002 per 1K tokens
-- Rate limit: 5000 requests/minute (tier dependent)
-
-**Chat Completions:**
-- Model: `gpt-4o-mini`
-- Max tokens: 1500
-- Temperature: 0.3 (more deterministic)
-- Cost: ~$0.15 per 1M input tokens
-
-### Error Handling
-
-All API calls wrapped in try-catch blocks:
-```typescript
-try {
-  const response = await fetch(openaiUrl, {...});
-  if (!response.ok) throw new Error();
-  return data;
-} catch (error) {
-  // Handle error, update status, return error response
-}
-```
-
-## Performance Characteristics
-
-### Repository Processing
-
-**Time Complexity:**
-- File walking: O(n) where n = number of files
-- Chunking: O(m) where m = total characters
-- Embedding: O(k) where k = number of chunks
-- **Total: O(n + m + k)**
-
-**Typical Times:**
-- Small repo (10-50 files): 30 seconds - 2 minutes
-- Medium repo (100-500 files): 3-10 minutes
-- Large repo (1000+ files): 15-30 minutes
-
-### Query Processing
-
-**Time Complexity:**
-- Embedding generation: O(1) - constant time
-- Vector search: O(log n) - sub-linear with HNSW
-- LLM generation: O(context_length)
-- **Total: O(log n + context_length)**
-
-**Typical Times:**
-- Query processing: 2-5 seconds
-- Most time spent in LLM generation
-- Vector search typically <100ms
-
-## Scalability Considerations
-
-### Database
-- pgvector scales to millions of vectors
-- HNSW index supports fast search at scale
-- Partition by repository for very large datasets
-
-### Edge Functions
-- Stateless, horizontally scalable
-- Isolated execution per request
-- Automatic scaling by Supabase
-
-### Costs
-- Primary cost: OpenAI API usage
-- Grows linearly with repositories and queries
-- Consider caching for repeated queries
-
-## Monitoring and Observability
-
-### Metrics to Track
-
-1. **Repository Processing:**
-   - Success/failure rate
-   - Processing time per repo
-   - Average chunks per file
-   - Error rates by type
-
-2. **Query Performance:**
-   - Query latency (p50, p95, p99)
-   - Search result quality (user feedback)
-   - LLM response time
-   - Cache hit rate (if implemented)
-
-3. **Cost Metrics:**
-   - OpenAI API usage
-   - Tokens consumed
-   - Cost per repository
-   - Cost per query
-
-4. **Database:**
-   - Query performance
-   - Index effectiveness
-   - Storage growth rate
-   - Connection pool usage
-
-### Logging
-
-Edge Functions log to Supabase dashboard:
-- Request/response payloads
-- Error stack traces
-- Processing milestones
-- Performance timings
-
-## Future Architecture Enhancements
-
-1. **Caching Layer:**
-   - Cache embeddings for common queries
-   - Cache LLM responses
-   - Implement Redis or similar
-
-2. **Queue System:**
-   - Move repo processing to job queue
-   - Enable retry logic
-   - Support priority processing
-
-3. **Multi-tenancy:**
-   - Isolate user data
-   - Per-user quotas
-   - Team workspaces
-
-4. **Advanced Search:**
-   - Hybrid search (vector + keyword)
-   - Filter by file type, language
-   - Time-based relevance
-
-5. **Real-time Updates:**
-   - WebSocket connections
-   - Live processing status
-   - Collaborative queries
-
-
-
-
-
-
-my updates:
-implementation of parsing
-
-
-
-1>Backend:
-
-| Language                 | Reason                  |
-| ------------------------ | ----------------------- |
-| **Python (.py)**         | Django, Flask, FastAPI  |
-| **Java (.java)**         | Spring Boot, enterprise |
-| **C# (.cs)**             | ASP.NET                 |
-| **Go (.go)**             | Modern microservices    |
-| **PHP (.php)**           | Laravel, WordPress      |
-| **Ruby (.rb)**           | Rails                   |
-| **Node (.js/.mjs/.cjs)** | Backend JS              |
-
-
-
-
-2>Frontend:
-
-| Language             | Reason                |
-| -------------------- | --------------------- |
-| **JavaScript (.js)** | Core of web           |
-| **TypeScript (.ts)** | Increasingly dominant |
-| **HTML (.html)**     | Templates & markup    |
-| **CSS (.css)**       | Styling               |
-| **JSON (.json)**     | Config, data, schema  |
+Feel free to submit issues and pull requests to improve the project!
