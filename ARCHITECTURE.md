@@ -578,3 +578,37 @@ Edge Functions log to Supabase dashboard:
    - Live processing status
    - Collaborative queries
 
+
+
+
+
+
+my updates:
+implementation of parsing
+
+
+
+1>Backend:
+
+| Language                 | Reason                  |
+| ------------------------ | ----------------------- |
+| **Python (.py)**         | Django, Flask, FastAPI  |
+| **Java (.java)**         | Spring Boot, enterprise |
+| **C# (.cs)**             | ASP.NET                 |
+| **Go (.go)**             | Modern microservices    |
+| **PHP (.php)**           | Laravel, WordPress      |
+| **Ruby (.rb)**           | Rails                   |
+| **Node (.js/.mjs/.cjs)** | Backend JS              |
+
+
+
+
+2>Frontend:
+
+| Language             | Reason                |
+| -------------------- | --------------------- |
+| **JavaScript (.js)** | Core of web           |
+| **TypeScript (.ts)** | Increasingly dominant |
+| **HTML (.html)**     | Templates & markup    |
+| **CSS (.css)**       | Styling               |
+| **JSON (.json)**     | Config, data, schema  |
