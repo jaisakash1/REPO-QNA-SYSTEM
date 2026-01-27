@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir torch torchvision torchaudio --index-url https://
 RUN pip install --no-cache-dir -r requirements.txt
 
 # RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-base-en-v1.5')"
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+# RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 # Copy into backend folder structure
 COPY . backend/
 
