@@ -17,20 +17,15 @@ class JSFunctionChunker:
 
     def collect(self, node, src, out):
         # Standard function declaration:  function foo() {}
-        if node.type == "function_declaration":
+        valid = {
+            "function_declaration",
+            "function",
+            "arrow_function",
+            "method_definition"
+        }
+        if node.type in valid and node.child_count > 0:
             out.append(self.extract(node, src))
 
-        # Function expression: const foo = function(){}
-        if node.type == "function":
-            out.append(self.extract(node, src))
-
-        # Arrow function: const foo = () => {}
-        if node.type == "arrow_function":
-            out.append(self.extract(node, src))
-
-        # Class method: class X { foo(){} }
-        if node.type == "method_definition":
-            out.append(self.extract(node, src))
 
         # Recursively check children
         for child in node.children:
