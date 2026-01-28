@@ -60,7 +60,7 @@ load_dotenv()
 # Configure the API globally
 client = Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def get_gemini_embedding(text):
+def get_gemini_embedding(text,task_type=None):
     try:
         res = client.models.embed_content(model="text-embedding-004", content=text)
         return res.embedding
