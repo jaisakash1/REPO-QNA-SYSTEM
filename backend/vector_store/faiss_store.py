@@ -6,27 +6,25 @@ import os
 import pickle
 import time
 import numpy as np
-import google.generativeai as genai
+# import google.generativeai as genai
 from dotenv import load_dotenv
 
 # Load env variables (ensures GEMINI_API_KEY is loaded)
+
+from google.genai import Client
 load_dotenv()
-
 # Configure the API globally
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def get_gemini_embedding(text, task_type="retrieval_document"):
-    """Helper function to get embedding with error handling"""
+def get_gemini_embedding(text):
     try:
-        result = genai.embed_content(
-            model="models/gemini-embedding-001",
-            content=text,
-            task_type=task_type
-        )
-        return result['embedding']
+        res = client.models.embed_content(model="text-embedding-004", content=text)
+        return res.embedding
     except Exception as e:
-        print(f"Error embedding text: {e}")
-        return None
+        if "429" in str(e):
+            print("Quota exhausted — stopping requests.")
+            return None
+        raise
 
 def create_faiss_index(repo_name, vectors, metadata, save_path="vector_store"):
     os.makedirs(save_path, exist_ok=True)
