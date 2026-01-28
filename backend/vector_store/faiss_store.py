@@ -11,20 +11,39 @@ from dotenv import load_dotenv
 
 # Load env variables (ensures GEMINI_API_KEY is loaded)
 
-from google.genai import Client
-load_dotenv()
-# Configure the API globally
-client = Client(api_key=os.getenv("GEMINI_API_KEY"))
 
-def get_gemini_embedding(text,task_type=None):
+import os
+import pickle
+import time
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+# Load env variables
+load_dotenv()
+
+# Configure the API globally
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+def get_gemini_embedding(text, task_type="retrieval_query"):
     try:
-        res = client.models.embed_content(model="text-embedding-004", content=text)
-        return res.embedding
+        # Switching to the stable, generally available model
+        # If this still fails, you can try "models/embedding-001" (the older legacy model)
+        model_name = "models/gemini-embedding-001"
+        
+        result = genai.embed_content(
+            model=model_name,
+            content=text,
+            task_type=task_type,
+            title=None 
+        )
+        return result['embedding']
     except Exception as e:
         if "429" in str(e):
-            print("Quota exhausted — stopping requests.")
+            print("[-] Quota exhausted — stopping requests temporarily.")
             return None
-        raise
+        # Print the specific error to help debug
+        print(f"[-] Error embedding chunk with model '{model_name}': {e}")
+        return None
 
 def create_faiss_index(repo_name, vectors, metadata, save_path="vector_store"):
     os.makedirs(save_path, exist_ok=True)
