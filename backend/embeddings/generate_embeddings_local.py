@@ -91,38 +91,69 @@ def get_gemini_embedding(text, task_type="retrieval_document"):
 def generate_embeddings_local(chunks, repo_name, save_path="data/embeddings"):
     os.makedirs(save_path, exist_ok=True)
     
-    print("[+] Generating embeddings using Gemini API...")
+    print("[+] Generating embeddings using Gemini API (Batch Mode)...")
+
+    # --- FIX START: Filter empty chunks first ---
+    # We must remove empty strings before batching, or the API fails the whole batch.
+    valid_chunks = []
+    skipped_count = 0
+    
+    for c in chunks:
+        if c["content"] and c["content"].strip():
+            valid_chunks.append(c)
+        else:
+            skipped_count += 1
+            
+    print(f"[*] Filtered out {skipped_count} empty chunks. Processing {len(valid_chunks)} valid chunks.")
+    # --- FIX END ---
 
     vectors = []
     metadata = []
-
-    for i, chunk in enumerate(chunks):
-        # 1. Skip empty content immediately to prevent API errors
-        if not chunk["content"] or not chunk["content"].strip():
-            continue
-
-        vec = get_gemini_embedding(chunk["content"], task_type="retrieval_document")
+    
+    BATCH_SIZE = 50 
+    
+    # Iterate over 'valid_chunks' now, not 'chunks'
+    for i in range(0, len(valid_chunks), BATCH_SIZE):
+        batch = valid_chunks[i : i + BATCH_SIZE]
+        batch_texts = [c["content"] for c in batch]
         
-        # 2. If embedding failed (None), skip this chunk
-        if vec is None:
-            continue
-            
-        vectors.append(vec)
-        metadata.append(chunk) # Store metadata matching the vector
-        
-        # Rate limit safety
-        time.sleep(0.05) 
+        retries = 3
+        for attempt in range(retries):
+            try:
+                result = genai.embed_content(
+                    model="models/gemini-embedding-001",
+                    content=batch_texts,
+                    task_type="retrieval_document"
+                )
+                
+                batch_embeddings = result['embedding']
+                
+                vectors.extend(batch_embeddings)
+                metadata.extend(batch) 
+                
+                print(f"   Processed batch {i} to {i + len(batch)}")
+                time.sleep(1.5) # Modest sleep to stay safe
+                break 
 
-    # 3. CRITICAL FIX: If no vectors were generated, stop here.
+            except Exception as e:
+                if "429" in str(e):
+                    wait_time = (attempt + 1) * 5
+                    print(f"[-] Quota hit. Waiting {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    # If a different error happens, we print it but don't crash the whole script
+                    print(f"[-] Error on batch {i}: {e}")
+                    break
+
     if not vectors:
-        print("[-] Error: No embeddings were generated. Check API Key or Input Data.")
+        print("[-] Error: No embeddings were generated.")
         return [], []
 
-    # Save vectors + metadata
     with open(f"{save_path}/{repo_name}_vectors.pkl", "wb") as f:
         pickle.dump(vectors, f)
 
     with open(f"{save_path}/{repo_name}_metadata.pkl", "wb") as f:
         pickle.dump(metadata, f)
 
+    print(f"[+] Success! Saved {len(vectors)} embeddings.")
     return vectors, metadata
